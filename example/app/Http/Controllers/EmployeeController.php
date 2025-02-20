@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
-abstract class Controller
+use Illuminate\Http\Request;
+
+class EmployeeController extends Controller
+
 {
     public function index()
     {
@@ -45,4 +48,5 @@ abstract class Controller
         return response()->json(null, 204);
     }
 }
+
 
