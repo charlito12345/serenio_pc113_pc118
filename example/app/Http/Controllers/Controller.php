@@ -12,7 +12,9 @@ abstract class Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string',
+            'f_name' => 'required|string',
+            'l_name' => 'required|string',
+            'm_name' => 'required|string',
             'email' => 'required|email|unique:employees,email',
             'position' => 'required|string',
         ]);
