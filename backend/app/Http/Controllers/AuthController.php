@@ -23,7 +23,7 @@ class AuthController extends Controller
 
         // Attempt to log the user in
         if (Auth::attempt($request->only('email', 'password'))) {
-            return redirect()->intended('/dashboard'); // Redirect to the intended route
+            return redirect()->intended('dashboard.html'); // Redirect to the intended route
         }
 
         return back()->withErrors([

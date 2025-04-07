@@ -21,7 +21,7 @@ Route::get('/employees/search', [StudentController::class, 'search']);
 Route::post('/employees', [EmployeeController::class, 'create']);
 Route::put('/employees/{id}', [StudentController::class, 'update']);
 Route::delete('/employees/{id}', [EmployeeController::class, 'delete']); 
-Route::post('/employees/search', [StudentController::class, 'login']);
+// Route::post('/employees/search', [StudentController::class, 'login']);
 
 // });
     
