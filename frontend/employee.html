@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Employee Dashboard</title>
+  <style>
+    /* Add CSS styling as needed */
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Employee Dashboard</h1>
+</header>
+
+<div class="container">
+  <h2>Employee List</h2>
+  <button onclick="openForm()">Add Employee</button>
+  <table id="employeeTable">
+    <thead>
+      <tr>
+        <th>ID</th><th>Name</th><th>Email</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div id="errorMessage" class="error-message"></div>
+</div>
+
+<!-- Modal -->
+<div id="formModal" style="display:none;">
+  <h3 id="formTitle">Add Employee</h3>
+  <form id="employeeForm">
+    <input type="hidden" id="employeeId" />
+    <input type="text" id="employeeName" placeholder="Name" required />
+    <input type="email" id="employeeEmail" placeholder="Email" required />
+    <button type="submit">Save</button>
+    <button type="button" onclick="closeForm()">Cancel</button>
+  </form>
+</div>
+
+<script>
+  const token = 'test_token'; // Replace with localStorage.getItem('token') in real auth
+
+  async function fetchEmployees() {
+    const res = await fetch('http://127.0.0.1:8000/api/employees');
+    const data = await res.json();
+    const tableBody = document.querySelector('#employeeTable tbody');
+    tableBody.innerHTML = '';
+    data.forEach(emp => {
+      const row = tableBody.insertRow();
+      row.innerHTML = `
+        <td>${emp.id}</td>
+        <td>${emp.name}</td>
+        <td>${emp.email}</td>
+        <td>
+          <button onclick="editEmployee(${emp.id})">Edit</button>
+          <button onclick="deleteEmployee(${emp.id})">Delete</button>
+        </td>
+      `;
+    });
+  }
+
+  function openForm(id = null) {
+    currentEmployeeId = id;
+    const modal = document.getElementById('formModal');
+    document.getElementById('employeeForm').reset();
+    document.getElementById('formTitle').textContent = id ? 'Edit Employee' : 'Add Employee';
+    modal.style.display = 'block';
+    if (id) {
+      fetch(`http://127.0.0.1:8000/api/employees/${id}`)
+        .then(res => res.json())
+        .then(emp => {
+          document.getElementById('employeeId').value = emp.id;
+          document.getElementById('employeeName').value = emp.name;
+          document.getElementById('employeeEmail').value = emp.email;
+        });
+    }
+  }
+
+  function closeForm() {
+    document.getElementById('formModal').style.display = 'none';
+  }
+
+  document.getElementById('employeeForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const id = document.getElementById('employeeId').value;
+    const name = document.getElementById('employeeName').value;
+    const email = document.getElementById('employeeEmail').value;
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? `http://127.0.0.1:8000/api/employees/${id}` : 'http://127.0.0.1:8000/api/employees';
+
+    await fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email })
+    });
+
+    closeForm();
+    fetchEmployees();
+  });
+
+  async function deleteEmployee(id) {
+    if (confirm('Delete this employee?')) {
+      await fetch(`http://127.0.0.1:8000/api/employees/${id}`, {
+        method: 'DELETE',
+      });
+      fetchEmployees();
+    }
+  }
+
+  function editEmployee(id) {
+    openForm(id);
+  }
+
+  fetchEmployees();
+</script>
+</body>
+</html>

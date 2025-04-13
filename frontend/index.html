@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Login / Register</title>
     <style>
         * {
             margin: 0;
@@ -21,7 +21,7 @@
             color: white;
         }
 
-        .login-container {
+        .container {
             background: rgba(255, 255, 255, 0.1);
             padding: 30px;
             border-radius: 10px;
@@ -30,7 +30,7 @@
             text-align: center;
         }
 
-        .login-container h2 {
+        .container h2 {
             font-size: 28px;
             margin-bottom: 20px;
         }
@@ -67,59 +67,127 @@
             font-size: 14px;
         }
 
-        .login-container p {
-            color: #aaa;
-            font-size: 14px;
+        .toggle-link {
+            color: #eee;
             margin-top: 15px;
+            display: block;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 <body>
 
-    <div class="login-container">
-        <h2>Login</h2>
-        <form id="loginForm">
-            <input type="email" id="email" placeholder="Email" required>
-            <input type="password" id="password" placeholder="Password" required>
-            <button type="submit">Login</button>
-            <p class="error-message" id="message"></p>
-        </form>
-    </div>
+<div class="container">
+    <h2 id="formTitle">Login</h2>
 
-    <script>
-        document.getElementById('loginForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
+    <!-- Login Form -->
+    <form id="loginForm">
+        <input type="email" id="loginEmail" placeholder="Email" required>
+        <input type="password" id="loginPassword" placeholder="Password" required>
+        <button type="submit">Login</button>
+        <p class="error-message" id="loginMessage"></p>
+    </form>
 
-            let email = document.getElementById('email').value;
-            let password = document.getElementById('password').value;
-            
-            try {
-                let response = await fetch('http://127.0.0.1:8000/api/login', { // Change to your actual API URL
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        email: email,
-                        password: password
-                    })
-                });
+    <!-- Register Form -->
+    <form id="registerForm" class="hidden">
+        <input type="text" id="registerName" placeholder="Full Name" required>
+        <input type="email" id="registerEmail" placeholder="Email" required>
+        <input type="password" id="registerPassword" placeholder="Password" required>
+        <button type="submit">Register</button>
+        <p class="error-message" id="registerMessage"></p>
+    </form>
 
-                let data = await response.json();
-                
-                if (response.ok) {
-                    alert('Login Successful!');
-                    localStorage.setItem('token', data.token); // Save token for authentication
-                    window.location.href = 'dashboard.html'; // Redirect to a dashboard
-                } else {
-                    document.getElementById('message').innerText = data.message || 'Login failed';
-                }
-            } catch (error) {
-                document.getElementById('message').innerText = 'Error connecting to server';
+    <span class="toggle-link" id="toggleLink">Don't have an account? Register here</span>
+</div>
+
+<script>
+    const toggleLink = document.getElementById('toggleLink');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const formTitle = document.getElementById('formTitle');
+
+    toggleLink.addEventListener('click', () => {
+        if (loginForm.classList.contains('hidden')) {
+            loginForm.classList.remove('hidden');
+            registerForm.classList.add('hidden');
+            toggleLink.textContent = "Don't have an account? Register here";
+            formTitle.textContent = "Login";
+        } else {
+            loginForm.classList.add('hidden');
+            registerForm.classList.remove('hidden');
+            toggleLink.textContent = "Already have an account? Login here";
+            formTitle.textContent = "Register";
+        }
+    });
+
+    // Login Submit
+    loginForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        let email = document.getElementById('loginEmail').value;
+        let password = document.getElementById('loginPassword').value;
+
+        try {
+            let response = await fetch('http://127.0.0.1:8000/api/users/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            });
+
+            let data = await response.json();
+
+            if (response.ok) {
+                alert('Login Successful!');
+                localStorage.setItem('token', data.token);
+                window.location.href = 'dashboard.html';
+            } else {
+                document.getElementById('loginMessage').innerText = data.message || 'Login failed';
             }
-        });
-    </script>
+        } catch (error) {
+            document.getElementById('loginMessage').innerText = 'Error connecting to server';
+        }
+    });
+
+    // Register Submit
+    registerForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        let name = document.getElementById('registerName').value;
+        let email = document.getElementById('registerEmail').value;
+        let password = document.getElementById('registerPassword').value;
+
+        try {
+            let response = await fetch('http://127.0.0.1:8000/api/users/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ name, email, password })
+            });
+
+            let data = await response.json();
+
+            if (response.ok) {
+                alert('Registration Successful! You can now log in.');
+                toggleLink.click(); // switch to login form
+            } else {
+                document.getElementById('registerMessage').innerText = data.message || 'Registration failed';
+            }
+        } catch (error) {
+            document.getElementById('registerMessage').innerText = 'Error connecting to server';
+        }
+    });
+</script>
 
 </body>
 </html>

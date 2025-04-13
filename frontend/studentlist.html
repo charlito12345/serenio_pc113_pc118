@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+    <link href="https://fonts.bunny.net/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+</head>
+<body>
+
+<header>
+    <a href="dashboard.html"><h1>Student Dashboard</h1></a>
+</header>
+
+<div class="card mt-2">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-md-6 col-12">
+                <h1><i class="fa fa-solid fa-users mt-2"></i> List of Student</h1>
+            </div>
+            <div class="col-md-6 col-12">
+                    <button class="float-end btn btn-primary mt-2" onclick="openForm()"><i class="fa fa-solid fa-user"></i> Add Student</button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-stripped table-column" id="studentTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>First Name</th>
+                        <th>Middle Name</th>
+                        <th>Last Name</th>
+                        <th>Email</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTable">
+                   
+                </tbody>
+            </table>
+        </div>
+        <div id="errorMessage" class="error-message"></div>
+    </div>
+</div>
+
+
+<!-- Form Modal -->
+<div class="card mt-2" id="formModal" style="display:none;">
+    <div class="card-header">
+        <h1 id="formTitle"><i class="fa fa-solid fa-user"></i>
+            Add New Student</h1>
+    </div>
+    <div class="card-body">
+        <form id="studentForm" onsubmit="saveStudent(event)">
+            <input type="hidden" id="studentId">
+            <div class="row">
+                <div class="form-group col-md-6">
+                    <label for="first_name">First Name</label>
+                    <input type="text" class="form-control" id="first_name" name="first_name" required placeholder="First Name...">
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="middle_name">Middle Name</label>
+                    <input type="text" class="form-control" id="middle_name" name="middle_name" required placeholder="Middle Name...">
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="last_name">Last Name</label>
+                    <input type="text" class="form-control" id="last_name" name="last_name" required placeholder="Last Name...">
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="birth_date">Date of Birth</label>
+                    <input type="date" class="form-control" id="birth_date" name="birth_date" required placeholder="Last Name...">
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="email">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" required placeholder="Email...">
+                </div>
+            </div>
+    </div>
+    <div class="card-footer">
+        <button class="btn btn-success btn-sm" type="submit" value="Submit">Submit</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeForm()">Cancel</button>
+    </div>
+    </form>
+</div>
+
+
+<!-- Form Modal -->
+<!-- <div id="formModal" style="display:none;">
+    <h3 id="formTitle">Add Student</h3>
+    <form id="studentForm">
+        <input type="hidden" id="studentId">
+        <input type="text" id="studentName" placeholder="Name" required>
+        <input type="email" id="studentEmail" placeholder="Email" required>
+        <button type="submit">Save</button>
+        <button type="button" onclick="closeForm()">Cancel</button>
+    </form>
+</div> -->
+
+<script>
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = 'index.html';
+    }
+
+    let currentStudentId = null;
+
+    async function fetchStudents() {
+        try {
+            const response = await fetch('http://127.0.0.1:8000/api/studentsList', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch students');
+            }
+
+            const students = await response.json();
+            const tableBody = document.getElementById('studentTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+            students.forEach(student => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = student.id;
+                row.insertCell(1).textContent = student.f_name;
+                row.insertCell(2).textContent = student.m_name;
+                row.insertCell(3).textContent = student.l_name;
+                row.insertCell(4).textContent = student.email;
+                const actionsCell = row.insertCell(5);
+                actionsCell.innerHTML = `
+                    <button class="btn btn-warning" onclick="editStudent(${student.id})">Edit</button>
+                    <button class="btn btn-danger" onclick="deleteStudent(${student.id})">Delete</button>
+                `;
+            });
+        } catch (error) {
+            document.getElementById('errorMessage').textContent = error.message;
+        }
+    }
+
+    function openForm(studentId = null) {
+        currentStudentId = studentId;
+        const formTitle = document.getElementById('formTitle');
+        const studentFname = document.getElementById('first_name');
+        const studentMname = document.getElementById('middle_name');
+        const studentLname = document.getElementById('last_name');
+        const studentEmail = document.getElementById('email');
+        const studentBirthDate = document.getElementById('birth_date');
+        const studentIdField = document.getElementById('studentId');
+
+        if (studentId) {
+            formTitle.textContent = 'Edit Student';
+            studentIdField.value = studentId;
+            fetchStudent(studentId);
+        } else {
+            formTitle.textContent = 'Add Student';
+            studentIdField.value = '';
+            studentFname.value = '';
+            studentMname.value = '';
+            studentLname.value = '';
+            studentEmail.value = '';
+            studentBirthDate.value = '';
+        }
+
+        document.getElementById('formModal').style.display = 'block';
+    }
+
+    function closeForm() {
+        document.getElementById('formModal').style.display = 'none';
+    }
+
+    async function fetchStudent(id) {
+        try {
+            const response = await fetch(`http://127.0.0.1:8000/api/get/students/${id}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch student');
+            }
+
+            const data = await response.json();
+            const student = data.student;
+
+            document.getElementById('first_name').value = student.f_name;
+            document.getElementById('middle_name').value = student.m_name;
+            document.getElementById('last_name').value = student.l_name;
+            document.getElementById('email').value = student.email;
+            document.getElementById('birth_date').value = student.birth_date;
+        } catch (error) {
+            document.getElementById('errorMessage').textContent = error.message;
+        }
+    }
+
+    async function saveStudent(event) {
+        event.preventDefault();
+        const studentFname = document.getElementById('first_name');
+        const studentMname = document.getElementById('middle_name');
+        const studentLname = document.getElementById('last_name');
+        const studentEmail = document.getElementById('email');
+        const studentBirthDate = document.getElementById('birth_date');
+        const studentIdField = document.getElementById('studentId');
+        const studentId = studentIdField.value;
+
+        const url = studentId ? `http://127.0.0.1:8000/api/update/students/${studentId}` : 'http://127.0.0.1:8000/api/studentsList';
+        const method = studentId ? 'PUT' : 'POST';
+        const body = JSON.stringify({ 
+            f_name: studentFname.value,
+            m_name: studentMname.value,
+            l_name: studentLname.value,
+            email: studentEmail.value,
+            birth_date: studentBirthDate.value, 
+        });
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: body
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save student');
+            }
+
+            fetchStudents();
+            closeForm();
+        } catch (error) {
+            document.getElementById('errorMessage').textContent = error.message;
+        }
+    }
+
+    async function editStudent(id) {
+        openForm(id);
+    }
+
+    async function deleteStudent(id) {
+        if (confirm('Are you sure you want to delete this student?')) {
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/api/students/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete student');
+                }
+
+                fetchStudents();
+            } catch (error) {
+                document.getElementById('errorMessage').textContent = error.message;
+            }
+        }
+    }
+
+    document.getElementById('studentForm').addEventListener('submit', saveStudent);
+
+    // Fetch students when the page loads
+    fetchStudents();
+</script>
+
+</body>
+</html>
